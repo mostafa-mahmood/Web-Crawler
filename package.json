@@ -4,7 +4,7 @@
   "description": "a program that automaticly browses the web to collect and index information from web pages.",
   "main": "main.js",
   "scripts": {
-    "start": "nodemon main.js",
+    "start": "node main.js",
     "test": "jest"
   },
   "repository": {
@@ -19,5 +19,8 @@
   "homepage": "https://github.com/mostafa-mahmood/Web-Crawler#readme",
   "devDependencies": {
     "jest": "^29.7.0"
+  },
+  "dependencies": {
+    "jsdom": "^26.0.0"
   }
 }
