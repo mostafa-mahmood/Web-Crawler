@@ -1,14 +1,16 @@
-# Web Crawler
+# Web Crawler API
 
-A web crawler that maps internal links on websites. This tool crawls a specified website and generates a report showing how many times each page is linked to internally.
+A web crawling API that maps internal links on websites. This tool crawls a given set of seed URLs and returns a structured JSON report showing how many times each page is linked to internally.
 
 ## Features
 
+- Accepts multiple seed URLs
 - Crawls all pages within a specified domain
 - Counts internal links to each page
-- Handles both relative and absolute URLs
-- Provides a formatted report of findings
+- Returns results as structured JSON
 - Respects same-origin policy (won't crawl external domains)
+- Supports depth-based crawling
+- Handles both relative and absolute URLs
 - Parallel crawling for better performance
 - Error handling for invalid URLs and non-HTML responses
 
@@ -22,7 +24,7 @@ A web crawler that maps internal links on websites. This tool crawls a specified
 1. Clone the repository:
 ```
 git clone <your-repository-url>
-cd Web-Crawler
+cd Web-Crawler-API
 ```
 
 2. Install dependencies:
@@ -32,37 +34,71 @@ npm install
 
 ## Usage
 
-Run the crawler with a base URL:
+### Running the API
+
+Start the server:
 ```
-npm start https://example.com
+npm start
 ```
 
-### Command Line Arguments
+### API Endpoints
 
-- Requires exactly one argument (the base URL)
-- Will exit with an error if no URL is provided or if too many arguments are given
+#### **POST /crawl**
+
+**Description:** Accepts a JSON payload with seed URLs and returns a structured report.
+
+**Request Body:**
+```json
+{
+  "seedUrl1": "https://books.toscrape.com",
+  "seedUrl2": "https://quotes.toscrape.com",
+  "seedUrl3": "https://webscraper.io/test-sites/e-commerce/allinone"
+}
+```
+
+**Response:**
+```json
+{
+  "https://books.toscrape.com": {
+    "pages": {
+      "https://books.toscrape.com": 1,
+      "https://books.toscrape.com/catalogue/page-1.html": 1
+    },
+    "logs": [
+      "Skipping https://external.com (different hostname)",
+      "Error fetching https://books.toscrape.com/404: Status code 404"
+    ]
+  },
+  "https://quotes.toscrape.com": {
+    "pages": {
+      "https://quotes.toscrape.com": 1
+    },
+    "logs": []
+  }
+}
+```
+
+### Query Parameters
+
+- **Depth:** Controls how deep the crawler should explore from the seed URL.
+- **Max Pages:** Limits the number of pages to be crawled per domain.
 
 ## Output
 
-The crawler will:
-1. Show progress as it crawls each page
-2. Generate a report showing internal links found
-3. Sort pages by number of internal links (descending order)
+- The API returns a JSON report with:
+  - The number of times each internal page is linked to
+  - Logs containing errors, skipped pages, and non-HTML responses
+  - Separate results for each seed URL
 
-Example output:
-```
-=================================
-============REPORT===============
-=================================
-Found 12 internal links to example.com/
-Found 8 internal links to example.com/about
-Found 6 internal links to example.com/contact
-=================================
-==========END REPORT=============
-=================================
-```
 ## Limitations
 
 - Only crawls pages within the same domain
 - Only processes HTML content
-- Requires a valid starting URL
+- Requires valid URLs in the request
+- High depth values may increase response time significantly
+
+## Future Enhancements
+
+- Implement caching to avoid redundant requests
+- Add support for sitemap crawling
+- Allow rate-limiting to control server load

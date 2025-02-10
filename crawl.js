@@ -1,85 +1,92 @@
 const { JSDOM } = require('jsdom');
+const fetch = require('node-fetch');
 
-async function crawlPage(baseURL, currentURL, pages) {
+async function crawlPage(baseURL, currentURL, pages, logs = []) {
+    pages = pages || {};
+    return await crawlPageWithDepth(baseURL, currentURL, pages, logs, 0);
+}
+
+async function crawlPageWithDepth(baseURL, currentURL, pages, logs, depth = 0) {
+    if (depth > 3) {
+        logs.push(`Max depth reached for ${currentURL}`);
+        return { pages, logs };
+    }
+
     const baseUrlObj = new URL(baseURL);
     const currentUrlObj = new URL(currentURL);
 
     if (baseUrlObj.hostname !== currentUrlObj.hostname) {
-        return pages;
+        logs.push(`Skipped ${currentURL} (different hostname)`);
+        return { pages, logs };
     }
 
     const normalizedCurrentUrl = normalizeURL(currentURL);
-    if (pages[normalizedCurrentUrl] > 0) {
-        pages[normalizedCurrentUrl]++;
-        return pages;
+
+    if (pages[normalizedCurrentUrl]) {
+        return { pages, logs };
     }
-    
+
     pages[normalizedCurrentUrl] = 1;
-    console.log(`Crawling ${currentURL} ...`);
 
     try {
         const res = await fetch(currentURL);
 
         if (res.status > 399) {
-            console.error(`Error fetching from URL: ${currentURL} \nstatus code: ${res.status}`);
-            return pages;
+            logs.push(`Error fetching ${currentURL}: Status code ${res.status}`);
+            return { pages, logs };
         }
 
-        const contentType = res.headers.get("content-type");
-        if (!contentType.includes('text/html')) {
-            console.error(`Non HTML response on page: ${currentURL}\ncontent-type: ${contentType}`);
-            return pages;
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('text/html')) {
+            logs.push(`Skipping ${currentURL}: Non-HTML content (${contentType})`);
+            return { pages, logs };
         }
 
         const htmlBody = await res.text();
-        const nextUrls = extractURL(htmlBody, baseURL);
-        
-        const crawlPromises = nextUrls.map(nextUrl => crawlPage(baseURL, nextUrl, pages));
-        await Promise.all(crawlPromises);
-        
-        return pages;
+        const nextUrls = extractURL(htmlBody, baseURL, logs);
+
+        await Promise.all(nextUrls.map(nextUrl => crawlPageWithDepth(baseURL, nextUrl, pages, logs, depth + 1)));
+
+        return { pages, logs };
     } catch (err) {
-        console.error(`Error crawling ${currentURL}: ${err.message}`);
-        return pages;
+        logs.push(`Error crawling ${currentURL}: ${err.message}`);
+        return { pages, logs };
     }
 }
 
-function extractURL(htmlBody, baseUrl) {
+function extractURL(htmlBody, baseUrl, logs = []) {
     const urls = [];
     const dom = new JSDOM(htmlBody);
     const linkElements = dom.window.document.querySelectorAll('a');
+    const baseUrlObj = new URL(baseUrl);
 
     for (const linkElement of linkElements) {
-        if (linkElement.href.charAt(0) === '/') {
-            try {
-                const urlObj = new URL(`${baseUrl}${linkElement.href}`);
-                urls.push(urlObj.href);
-            } catch (err) {
-                console.log("Error handling relative URL:", err.message);
+        try {
+            let href = linkElement.href;
+
+            if (!href.startsWith('http')) {
+                href = new URL(href, baseUrl).href;
             }
-        } else {
-            try {
-                const urlObj = new URL(linkElement.href);
-                urls.push(urlObj.href);
-            } catch (err) {
-                console.log("Error handling absolute URL:", err.message);
+
+            const urlObj = new URL(href);
+            if (urlObj.hostname === baseUrlObj.hostname) {
+                urls.push(href);
             }
-        }      
+        } catch (err) {
+            logs.push(`Error handling URL: ${err.message}`);
+        }
     }
+
     return urls;
 }
 
 function normalizeURL(urlString) {
     const urlObj = new URL(urlString);
-    let url = `${urlObj.hostname}${urlObj.pathname}`;
-    if (url.length > 0 && url.slice(-1) === '/') {
-        url = url.slice(0, -1);
-    }
-    return url;
+    return `${urlObj.protocol}//${urlObj.hostname}${urlObj.pathname}`.replace(/\/$/, '');
 }
 
 module.exports = {
-          crawlPage,
-          normalizeURL,
-          extractURL
+    crawlPage,
+    normalizeURL,
+    extractURL,
 };
