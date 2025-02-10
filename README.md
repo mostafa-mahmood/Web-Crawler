@@ -23,8 +23,8 @@ A web crawling API that maps internal links on websites. This tool crawls a give
 
 1. Clone the repository:
 ```
-git clone <your-repository-url>
-cd Web-Crawler-API
+git clone https://github.com/mostafa-mahmood/Web-Crawler.git
+cd Web-Crawler
 ```
 
 2. Install dependencies:
@@ -43,16 +43,19 @@ npm start
 
 ### API Endpoints
 
-#### **POST /crawl**
+#### **POST /api**
 
-**Description:** Accepts a JSON payload with seed URLs and returns a structured report.
+**Description:** Accepts a JSON payload with seed URLs, max depth and max pages and returns a structured report.
 
 **Request Body:**
 ```json
 {
-  "seedUrl1": "https://books.toscrape.com",
-  "seedUrl2": "https://quotes.toscrape.com",
-  "seedUrl3": "https://webscraper.io/test-sites/e-commerce/allinone"
+  "urls": [
+    "https://books.toscrape.com",
+    "https://quotes.toscrape.com"
+  ],
+  "depth": 5,
+  "maxPages": 100
 }
 ```
 
