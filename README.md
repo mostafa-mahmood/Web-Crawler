@@ -7,12 +7,9 @@ A web crawling API that maps internal links on websites. This tool crawls a give
 - Accepts multiple seed URLs
 - Crawls all pages within a specified domain
 - Counts internal links to each page
-- Returns results as structured JSON
 - Respects same-origin policy (won't crawl external domains)
 - Supports depth-based crawling
-- Handles both relative and absolute URLs
 - Parallel crawling for better performance
-- Error handling for invalid URLs and non-HTML responses
 
 ## Prerequisites
 
